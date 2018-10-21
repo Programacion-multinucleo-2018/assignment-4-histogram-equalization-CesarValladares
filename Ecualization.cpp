@@ -21,7 +21,7 @@ void histog(Mat &image, Mat &output){
 
     cout << totalSize << endl;
 
-    int hist[256] ={};
+    long hist[256] ={};
 
     cout << "Calculando histograma" << endl;
     // Calculando histograma
@@ -37,7 +37,7 @@ void histog(Mat &image, Mat &output){
 
     cout << "Normalizando" << endl;
     // Normalizando 
-    int hist_s[256]= {};
+    long hist_s[256]= {};
 
     for (int i = 0; i < 256; i++){
         
@@ -95,6 +95,11 @@ int main (int argc, char** argv){
 
         imshow("Input", grayImage);
         imshow("Output", output);
+
+        string path = argv[1];
+
+        imwrite("Images/Gray_Image.jpeg" , grayImage);
+        imwrite("Images/Gray_Image2.jpeg" , output);
     }   
 
     waitKey(0);
