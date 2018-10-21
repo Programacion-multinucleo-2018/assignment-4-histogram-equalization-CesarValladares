@@ -88,18 +88,20 @@ int main (int argc, char** argv){
 
         output = grayImage.clone();
 
+        auto start_cpu =  chrono::high_resolution_clock::now();
         histog(grayImage, output);
+        auto end_cpu =  chrono::high_resolution_clock::now();
+
+        chrono::duration<float, std::milli> duration_ms = end_cpu - start_cpu;
+        
+
+        cout << "Time using CPU: " << duration_ms.count() << " ms" << endl;
         
         namedWindow("Input", cv::WINDOW_NORMAL);
         namedWindow("Output", cv::WINDOW_NORMAL);
 
         imshow("Input", grayImage);
         imshow("Output", output);
-
-        string path = argv[1];
-
-        imwrite("Images/Gray_Image.jpeg" , grayImage);
-        imwrite("Images/Gray_Image2.jpeg" , output);
     }   
 
     waitKey(0);
