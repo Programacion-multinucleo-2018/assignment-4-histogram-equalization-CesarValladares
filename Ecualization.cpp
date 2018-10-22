@@ -63,7 +63,6 @@ void histog(Mat &image, Mat &output){
             output.at<uchar>(i,j) = hist_s[index];
         }
     }
-
 }
 
 

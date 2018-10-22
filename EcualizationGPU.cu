@@ -4,6 +4,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <ctime>
 
 #include "common.h"
 #include <cuda_runtime.h>
@@ -49,22 +50,20 @@ __global__ void histog_kernel(unsigned char* input, int width, int height, int g
 
 }
 
-__global__ void Normal(int * hist , int * hist_s, int totalSize){
+__global__ void Normal(int * hist , int * hist_s, float totalSize){
 
     
     unsigned int nxy = threadIdx.x + threadIdx.y * blockDim.x;
 
     if (nxy < 256 && blockIdx.x == 0 && blockIdx.y == 0){
 
-        __syncthreads();
-
-        for(int i = 0; i <= nxy; i++){
+        for(int i = 0; i < nxy; i++){
 
             hist_s[nxy]+=hist[i];
 
         }
 
-        hist_s[nxy] = (hist_s[nxy]*255)/totalSize;
+        hist_s[nxy] = hist_s[nxy]*(255/totalSize);
 
     }
 
@@ -79,7 +78,7 @@ __global__ void Create_Image(unsigned char* input, unsigned char* output, int wi
 	//Location of gray pixel in output
     const int gray_tid  = iy * grayWidthStep + ix;
 
-	if( ix <= width && iy <= height)
+	if( ix < width && iy < height)
 	{
         int Index = input[gray_tid];
 		output[gray_tid] = hist_s[Index];
@@ -89,10 +88,13 @@ __global__ void Create_Image(unsigned char* input, unsigned char* output, int wi
 void histog(const Mat& input, Mat& output)
 {
 	//Calcu late total number of bytes, input and output image are both gray scale
-	const int grayBytes = output.step * output.rows;
+    size_t grayBytes = input.step * input.rows;
+    float totalSize = output.rows * output.cols;
 
-    int * hist_s;
-    int * hist;
+    int * hist_s = {};
+    int * hist = {};
+
+    float average = 0;
 
 	unsigned char *d_input, *d_output;
 
@@ -111,15 +113,23 @@ void histog(const Mat& input, Mat& output)
 
 	//Calculate grid size to cover the whole image
     const dim3 grid((input.cols)/block.x, (input.rows)/block.y);
-    printf("histog_kernel<<<(%d, %d) , (%d, %d)>>>\n", grid.x, grid.y, block.x, block.y);
+
+    auto start_cpu =  chrono::high_resolution_clock::now();
 
 	//Launch the color conversion kernel
-	histog_kernel<<<grid,block>>>(d_input,input.cols,input.rows, input.step, grayBytes, hist);
-    Normal<<<grid,block>>>(hist, hist_s, grayBytes);
-    Create_Image<<<grid,block>>>(d_input, d_output, input.cols, input.rows, input.step, hist_s);
-    
-	//Synchronize to check for any kernel launch errors
+	histog_kernel<<<grid,block>>>(d_input,input.cols,input.rows, input.step, totalSize, hist);
+    Normal<<<grid,block>>>(hist, hist_s, totalSize);
+    Create_Image<<<grid,block>>>(d_input, d_output, output.cols, output.rows, output.step, hist_s);
+
+    auto end_cpu =  chrono::high_resolution_clock::now();
+
+    chrono::duration<float, std::milli> duration_ms = end_cpu - start_cpu;
+    average = duration_ms.count();
+
+    //Synchronize to check for any kernel launch errors
 	SAFE_CALL(cudaDeviceSynchronize(),"Kernel Launch Failed");
+
+    printf("histog_kernel <<<(%d,%d), (%d,%d)>>> elapsed %f ms\n", grid.x, grid.y, block.x, block.y, average);
 
 	//Copy back data from destination device meory to OpenCV output image
 	SAFE_CALL(cudaMemcpy(output.ptr(),d_output,grayBytes,cudaMemcpyDeviceToHost),"CUDA Memcpy Host To Device Failed");
@@ -146,18 +156,20 @@ int main (int argc, char** argv){
 
         image = imread(argv[1], CV_LOAD_IMAGE_COLOR);
 
-        cout << "Image size Step: "<< image.step << " Rows: " << image.rows << " Cols: " << image.cols << endl;
-
         cvtColor(image, grayImage, CV_BGR2GRAY);
 
         output = grayImage.clone();
 
+        cout << "Image size Step: "<< grayImage.step << " Rows: " << image.rows << " Cols: " << image.cols << endl;
+        
         
         histog(grayImage, output);      
 
         //Allow the windows to resize
         namedWindow("Input", cv::WINDOW_NORMAL);
+        resizeWindow("Input", 800, 600);
         namedWindow("Output", cv::WINDOW_NORMAL);
+        resizeWindow("Output", 800, 600);
 
         //Show the input and output
         imshow("Input", grayImage);
