@@ -19,8 +19,6 @@ void histog(Mat &image, Mat &output){
 
     long totalSize = x*y;
 
-    cout << totalSize << endl;
-
     long hist[256] ={};
 
     cout << "Calculando histograma" << endl;
@@ -97,7 +95,9 @@ int main (int argc, char** argv){
         cout << "Time using CPU: " << duration_ms.count() << " ms" << endl;
         
         namedWindow("Input", cv::WINDOW_NORMAL);
+        resizeWindow("Input", 800, 600);
         namedWindow("Output", cv::WINDOW_NORMAL);
+        resizeWindow("Output", 800, 600);
 
         imshow("Input", grayImage);
         imshow("Output", output);

@@ -24,3 +24,19 @@ Rubric:
 5. For the GPU version, used shared memory where necessary.
 6. Both images are displayed at the end.
 7. Calculation times and speedup obtained are incuded in the Readme.
+
+REPORT:
+
+César Armando Valladares Martínez A01023506
+
+Tiempos de los codigos con una matriz de 2000 X 2000
+
+La GPU es: GeForce GTX 1050 Ti
+
+Usando solo la imagen de "dog1.jpeg"
+
+Tiempo promedio en CPU: 220.681 ms
+
+Tiempo promedio en GPU: 0.019113 ms
+
+SpeedUp: 11534.051115873
