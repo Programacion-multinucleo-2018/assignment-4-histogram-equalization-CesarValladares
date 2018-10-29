@@ -25,6 +25,8 @@ Rubric:
 6. Both images are displayed at the end.
 7. Calculation times and speedup obtained are incuded in the Readme.
 
+**Grade: 100**
+
 REPORT:
 
 César Armando Valladares Martínez A01023506
